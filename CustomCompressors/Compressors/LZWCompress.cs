@@ -8,7 +8,7 @@ using CustomCompressors.Utilities;
 
 namespace CustomCompressors.Compressors
 {
-    class LZWCompress : ICompressor
+    public class LZWCompress : ICompressor
     {
         #region Variables
         Dictionary<List<byte>, int> LZWTable = new Dictionary<List<byte>, int>();
@@ -22,7 +22,9 @@ namespace CustomCompressors.Compressors
             var chara = new List<byte>();
             foreach (var character in Text)
             {
-                chara[0] = character;
+                string x = character.ToString();
+                chara.Clear();
+                chara.Add(character);
                 if (!LZWTable.ContainsKey(chara))
                 {
                     LZWTable.Add(chara, code);
@@ -36,12 +38,13 @@ namespace CustomCompressors.Compressors
             List<byte> Subchain;
             string Code = "";
             int max = 0;
-            while (Characters.Count == 0)
+            while (Characters.Count != 0)
             {
                 Subchain = new List<byte>();
-                int i = -1;
+                int i = 0;
+                Subchain.Add(Characters.ElementAt<byte>(i));
 
-                while (!LZWTable.ContainsKey(Subchain))
+                while (LZWTable.ContainsKey(Subchain))
                 {
                     i++;
                     Subchain.Add(Characters.ElementAt<byte>(i));
@@ -80,11 +83,11 @@ namespace CustomCompressors.Compressors
             }
             return Finalcode.ToArray();
         }
-        public byte[] Decompression(byte[] CompressedText)
-        {
-            int maxbitlength = CompressedText[0];
+        //public byte[] Decompression(byte[] CompressedText)
+        //{
+        //    int maxbitlength = CompressedText[0];
 
-        }
+        //}
 
         public string CompressString(string text)
         {
