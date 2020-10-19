@@ -6,13 +6,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CustomCompressors.Utilities;
 using System.Runtime.ConstrainedExecution;
+using System.Security.Cryptography;
 
 namespace CustomCompressors.Compressors
 {
     public class LZWCompress : ICompressor
     {
         #region Variables
-        Dictionary<string, int> LZWTable = new Dictionary<string, int>();
+        Dictionary<List<byte>, int> ValuesDictionary = new Dictionary<List<byte>, int>();
+        //Dictionary<string, int> LZWTable = new Dictionary<string, int>();
         List<byte> Differentchar = new List<byte>();
         List<byte> Characters = new List<byte>();
         int code = 1;
@@ -20,49 +22,66 @@ namespace CustomCompressors.Compressors
         public byte[] Compression(byte[] Text)
         {
             //Primer recorrido al arreglo
-            string chara = "";
-            foreach (var character in Text)
+            //string chara = "";
+            List<byte> byteList = new List<byte>(Text);
+            List<byte> newByteList = new List<byte>();
+            while (byteList.Count > 0)
             {
-                chara = character.ToString();
-                if (!LZWTable.ContainsKey(chara))
+                newByteList.Add(byteList[0]);
+                byteList.RemoveAt(0);
+                if (!ValuesDictionary.ContainsKey(newByteList))
                 {
-                    LZWTable.Add(chara, code);
+                    ValuesDictionary.Add(newByteList, code);
                     code++;
-                    Differentchar.Add(character);
+                    newByteList = new List<byte>();
                 }
             }
 
+            //foreach (var character in Text)
+            //{
+            //    chara = character.ToString();
+            //    if (!LZWTable.ContainsKey(chara))
+            //    {
+            //        LZWTable.Add(chara, code);
+            //        code++;
+            //        Differentchar.Add(character);
+            //    }
+            //}
+
             //Segundo recorrido y asignación de valores
-            Characters = Text.ToList<byte>();
-            string Subchain;
+            Characters = new List<byte>(Text);
+            List<byte> Subchain = new List<byte>();
             string Code = "";
             int max = 0;
             List<int> codes = new List<int>();
             while (Characters.Count != 0)
             {
                 int i = 0;
-                Subchain = Characters.ElementAt<byte>(i).ToString();
+                Subchain.Add(Characters[i]);
+                Subchain.RemoveAt(i);
                 if(Characters.Count > 1)
                 {
-                    while (LZWTable.ContainsKey(Subchain))
+                    while (ValuesDictionary.ContainsKey(Subchain))
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters.ElementAt<byte>(i).ToString()))
+                        Subchain.Add(Characters[i]);
+                        Characters.RemoveAt(i);
+                        if (!ValuesDictionary.ContainsKey(Subchain))
                         {
-                            codes.Add(LZWTable[Subchain]);
-                            if (max < LZWTable[Subchain])
+                            codes.Add(ValuesDictionary[Subchain]);
+                            if (max < ValuesDictionary[Subchain])
                             {
-                                max = LZWTable[Subchain];
+                                max = ValuesDictionary[Subchain];
                             }
                         }
                         i++;
-                        Subchain += Characters.ElementAt<byte>(i).ToString();
+                        Subchain.Add(Characters[i]);
                     }
-                    LZWTable.Add(Subchain, code);
+                    ValuesDictionary.Add(Subchain, code);
                     code++;
                 }
                 else
                 {
-                    codes.Add(LZWTable[Subchain]);
+                    codes.Add(ValuesDictionary[Subchain]);
                 }
                 Characters.RemoveAt(0);
             }
