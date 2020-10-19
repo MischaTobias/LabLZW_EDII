@@ -11,7 +11,7 @@ namespace CustomCompressors.Compressors
     public class LZWCompress : ICompressor
     {
         #region Variables
-        Dictionary<List<byte>, int> LZWTable = new Dictionary<List<byte>, int>();
+        Dictionary<string, int> LZWTable = new Dictionary<string, int>();
         List<byte> Differentchar = new List<byte>();
         List<byte> Characters = new List<byte>();
         int code = 1;
@@ -19,12 +19,10 @@ namespace CustomCompressors.Compressors
         public byte[] Compression(byte[] Text)
         {
             //Primer recorrido al arreglo
-            var chara = new List<byte>();
+            string chara = "";
             foreach (var character in Text)
             {
-                string x = character.ToString();
-                chara.Clear();
-                chara.Add(character);
+                chara = character.ToString();
                 if (!LZWTable.ContainsKey(chara))
                 {
                     LZWTable.Add(chara, code);
@@ -35,29 +33,36 @@ namespace CustomCompressors.Compressors
 
             //Segundo recorrido y asignación de valores
             Characters = Text.ToList<byte>();
-            List<byte> Subchain;
+            string Subchain;
             string Code = "";
             int max = 0;
             while (Characters.Count != 0)
             {
-                Subchain = new List<byte>();
                 int i = 0;
-                Subchain.Add(Characters.ElementAt<byte>(i));
-
-                while (LZWTable.ContainsKey(Subchain))
+                Subchain = Characters.ElementAt<byte>(i).ToString();
+                if(Characters.Count > 1)
                 {
-                    i++;
-                    Subchain.Add(Characters.ElementAt<byte>(i));
+                    while (LZWTable.ContainsKey(Subchain))
+                    {
+                        if (!LZWTable.ContainsKey(Subchain + Characters.ElementAt<byte>(i).ToString()))
+                        {
+                            Code += Convert.ToString(LZWTable[Subchain], 2);
+                            if (max < LZWTable[Subchain])
+                            {
+                                max = LZWTable[Subchain];
+                            }
+                        }
+                        i++;
+                        Subchain += Characters.ElementAt<byte>(i).ToString();
+                    }
+                    LZWTable.Add(Subchain, code);
+                    code++;
                 }
-                if (max < LZWTable[Subchain])
+                else
                 {
-                    max = LZWTable[Subchain];
+                    Code += Convert.ToString(LZWTable[Subchain], 2);
                 }
-                Code = Convert.ToString(LZWTable[Subchain], 2);
-                for (int j = 0; j < i + 1; j++)
-                {
-                    Characters.RemoveAt(0);
-                }
+                Characters.RemoveAt(0);
             }
             if (Code.Length != 0)
             {
@@ -65,7 +70,6 @@ namespace CustomCompressors.Compressors
                 {
                     Code += "0";
                 }
-                Convert.ToByte(Code, 2);
             }
 
             //Construcción del arreglo final
