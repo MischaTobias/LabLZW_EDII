@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using CustomCompressors.Utilities;
 
 namespace CustomCompressors.Compressors
 {
@@ -67,6 +68,7 @@ namespace CustomCompressors.Compressors
             //Construcción del arreglo final
             var Finalcode = new List<byte>();
             Finalcode.Add(Convert.ToByte(Convert.ToString(max, 2).Length));
+            Finalcode.Add(Convert.ToByte(Differentchar.Count()));
             foreach (var item in Differentchar)
             {
                 Finalcode.Add(item);
@@ -81,6 +83,16 @@ namespace CustomCompressors.Compressors
         public byte[] Decompression(byte[] CompressedText)
         {
             int maxbitlength = CompressedText[0];
+
+        }
+
+        public string CompressString(string text)
+        {
+            int bufferSize = 2000000;
+            var buffer = new byte[bufferSize];
+            buffer = ByteConverter.ConvertToBytes(text);
+            buffer = Compression(buffer);
+            return ByteConverter.ConvertToString(buffer);
 
         }
     }
