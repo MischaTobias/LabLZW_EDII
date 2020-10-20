@@ -9,7 +9,7 @@ namespace CustomCompressors.Interfaces
     interface ICompressor
     {
         Task CompressFile(string path, IFormFile file, string name);
-        Task DecompressFile(IFormFile file, string name);
+        Task DecompressFile(string path, IFormFile file, string name);
         string CompressText(string text);
         string DecompressText(string text);
     }

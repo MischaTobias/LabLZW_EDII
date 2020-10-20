@@ -112,7 +112,7 @@ namespace CustomCompressors.Compressors
             {
                 returningList.Add(item);
             }
-            string Ccode = "";
+            string code = "";
             foreach (var number in NumbersToWrite)
             {
                 subcode = Convert.ToString(number, 2);
@@ -120,20 +120,20 @@ namespace CustomCompressors.Compressors
                 {
                   subcode = "0" + subcode;
                 }
-                Ccode += subcode;
-                if (Ccode.Length >= 8)
+                code += subcode;
+                if (code.Length >= 8)
                 {
-                    returningList.Add(Convert.ToByte(Ccode.Substring(0, 8), 2));
-                    Ccode = Ccode.Remove(0, 8);
+                    returningList.Add(Convert.ToByte(code.Substring(0, 8), 2));
+                    code = code.Remove(0, 8);
                 }
             }
-            if (Ccode.Length != 0)
+            if (code.Length != 0)
             {
-                while (Ccode.Length != 8)
+                while (code.Length != 8)
                 {
-                    Ccode += "0";
+                    code += "0";
                 }
-                returningList.Add(Convert.ToByte(Ccode, 2));
+                returningList.Add(Convert.ToByte(code, 2));
             }
             ResetVariables();
             return ByteConverter.ConvertToString(returningList.ToArray());
@@ -181,7 +181,7 @@ namespace CustomCompressors.Compressors
             {
                 writer.Write(item);
             }
-            string Ccode = "";
+            string code = "";
             foreach (var number in NumbersToWrite)
             {
                 compressionCode = Convert.ToString(number, 2);
@@ -189,17 +189,21 @@ namespace CustomCompressors.Compressors
                 {
                     compressionCode = "0" + compressionCode;
                 }
-                Ccode += compressionCode;
-                if (Ccode.Length >= 8)
+                code += compressionCode;
+                if (code.Length >= 8)
                 {
-                    writer.Write(Convert.ToByte(Ccode.Substring(0, 8), 2));
-                    Ccode = Ccode.Remove(0, 8);
+                    writer.Write(Convert.ToByte(code.Substring(0, 8), 2));
+                    code = code.Remove(0, 8);
                 }
             }
-            if (Ccode.Length != 0)
+            if (code.Length != 0)
             {
-                writer.Write(Convert.ToByte(Ccode, 2));
-                Ccode = string.Empty;
+                while (code.Length != 8)
+                {
+                    code += "0";
+                }
+                writer.Write(Convert.ToByte(code, 2));
+                code = string.Empty;
             }
             writer.Close();
             fileToWrite.Close();
@@ -313,9 +317,49 @@ namespace CustomCompressors.Compressors
             return ByteConverter.ConvertToString(BytesToWrite.ToArray());
         }
 
-        public async Task DecompressFile(IFormFile file, string name)
+        public async Task DecompressFile(string path, IFormFile file, string name)
         {
+            if (System.IO.File.Exists($"{path}/Uploads/{file.FileName}"))
+            {
+                System.IO.File.Delete($"{path}/Uploads/{file.FileName}");
+            }
 
+            if (System.IO.File.Exists($"{path}/Decompressions/{name}"))
+            {
+                System.IO.File.Delete($"{path}/Decompressions/{name}");
+            }
+
+            using var saver = new FileStream($"{path}/Uploads/{file.FileName}", FileMode.OpenOrCreate);
+            await file.CopyToAsync(saver);
+
+            using var reader = new BinaryReader(saver);
+            int bufferSize = 2000;
+            var buffer = new byte[bufferSize];
+            buffer = reader.ReadBytes(bufferSize);
+            buffer = FillDecompressionDictionary(buffer);
+            var DecompressedIndexes = Decompression(buffer);
+            while (saver.Position != saver.Length)
+            {
+                buffer = reader.ReadBytes(bufferSize);
+                foreach (var number in Decompression(buffer))
+                {
+                    DecompressedIndexes.Add(number);
+                }
+            }
+            reader.Close();
+            saver.Close();
+
+            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
+            using var writer = new BinaryWriter(fileToWrite);
+            foreach (var index in DecompressedIndexes)
+            {
+                foreach (var value in DecompressLZWTable[index])
+                {
+                    writer.Write(value);
+                }
+            }
+            writer.Close();
+            fileToWrite.Close();
         }
         #endregion
     }
