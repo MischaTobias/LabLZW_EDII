@@ -8,5 +8,10 @@
     <ProjectReference Include="..\CustomCompressors\CustomCompressors.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Compressions\" />
+    <Folder Include="Uploads\" />
+  </ItemGroup>
+
 
 </Project>

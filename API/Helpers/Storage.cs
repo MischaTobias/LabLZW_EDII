@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using API.Models;
 using System.Threading.Tasks;
+using CustomCompressors.Compressors;
 
 namespace API.Helpers
 {
@@ -19,5 +20,6 @@ namespace API.Helpers
             }
         }
         public List<LZW> HistoryList = new List<LZW>();
+        public LZWCompress lzwCompre = new LZWCompress();
     }
 }

@@ -151,6 +151,7 @@ namespace CustomCompressors.Compressors
             using var reader = new BinaryReader(saver);
             int bufferSize = 2000;
             var buffer = new byte[bufferSize];
+            saver.Position = saver.Seek(0, SeekOrigin.Begin);
             while (saver.Position != saver.Length)
             {
                 buffer = reader.ReadBytes(bufferSize);
