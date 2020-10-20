@@ -336,7 +336,9 @@ namespace CustomCompressors.Compressors
             using var reader = new BinaryReader(saver);
             int bufferSize = 2000;
             var buffer = new byte[bufferSize];
+            saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
+            MaxValueLength = buffer[0];
             buffer = FillDecompressionDictionary(buffer);
             var DecompressedIndexes = Decompression(buffer);
             while (saver.Position != saver.Length)
@@ -350,7 +352,7 @@ namespace CustomCompressors.Compressors
             reader.Close();
             saver.Close();
 
-            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
+            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}.txt", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
             foreach (var index in DecompressedIndexes)
             {
