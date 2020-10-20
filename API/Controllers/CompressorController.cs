@@ -57,14 +57,26 @@ namespace API.Controllers
             LZWInfo.SetAttributes(Environment.ContentRootPath, file.FileName, name);
             Storage.Instance.HistoryList.Add(LZWInfo);
 
-            return PhysicalFile($"{Environment.ContentRootPath}/{name}", MediaTypeNames.Text.Plain, $"{name}.lzw");
+            return PhysicalFile($"{Environment.ContentRootPath}/Compressions/{name}.lzw", MediaTypeNames.Text.Plain, $"{name}.lzw");
         }
 
         // POST api/<CompressorController>
         [Route("/api/decompress")]
         [HttpPost]
-        public void PostDecompress([FromBody] string value)
+        public async Task<PhysicalFileResult> PostDecompressAsync([FromForm] IFormFile file)
         {
+
+            LZW.LoadHistList(Environment.ContentRootPath);
+            var name = "";
+            foreach (var item in Storage.Instance.HistoryList)
+            {
+                if (item.CompressedName == file.FileName)
+                {
+                    name = item.OriginalName;
+                }
+            }
+            await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
+            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, ".txt");
 
         }
 
