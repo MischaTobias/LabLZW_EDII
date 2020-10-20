@@ -6,6 +6,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CustomCompressors.Utilities;
 using System.Runtime.ConstrainedExecution;
+using System.Buffers;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using Microsoft.AspNetCore.Http.Features;
+using System.Threading;
 
 namespace CustomCompressors.Compressors
 {
@@ -13,165 +19,209 @@ namespace CustomCompressors.Compressors
     {
         #region Variables
         Dictionary<string, int> LZWTable = new Dictionary<string, int>();
+        Dictionary<int, byte> DecompressLZWTable = new Dictionary<int, byte>();
         List<byte> Differentchar = new List<byte>();
         List<byte> Characters = new List<byte>();
+        List<int> NumbersToWrite = new List<int>();
+        int MaxValueLength = 0;
         int code = 1;
         #endregion
-        public byte[] Compression(byte[] Text)
+
+        private void ResetVariables()
         {
-            //Primer recorrido al arreglo
-            string chara = "";
+            LZWTable.Clear();
+            Differentchar.Clear();
+            Characters.Clear();
+            NumbersToWrite.Clear();
+            MaxValueLength = 0;
+            code = 1;
+        }
+
+        #region Compression
+        private void FillDictionary(byte[] Text)
+        {
+            //First reading through the text
+            string chara = string.Empty;
             foreach (var character in Text)
             {
-                chara = character.ToString();
+                chara += Convert.ToChar(character);
                 if (!LZWTable.ContainsKey(chara))
                 {
                     LZWTable.Add(chara, code);
                     code++;
                     Differentchar.Add(character);
                 }
+                chara = string.Empty;
             }
+        }
 
+        private void Compression(byte[] Text)
+        { 
             //Segundo recorrido y asignación de valores
-            Characters = Text.ToList<byte>();
+            Characters = Text.ToList();
             string Subchain;
-            string Code = "";
-            int max = 0;
-            List<int> codes = new List<int>();
+            MaxValueLength = 0;
             while (Characters.Count != 0)
             {
                 int i = 0;
-                Subchain = Characters.ElementAt<byte>(i).ToString();
+                Subchain = Characters.ElementAt(i).ToString();
                 if(Characters.Count > 1)
                 {
                     while (LZWTable.ContainsKey(Subchain))
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters.ElementAt<byte>(i).ToString()))
+                        if (!LZWTable.ContainsKey(Subchain + Characters.ElementAt(i).ToString()))
                         {
-                            codes.Add(LZWTable[Subchain]);
-                            if (max < LZWTable[Subchain])
+                            NumbersToWrite.Add(LZWTable[Subchain]);
+                            if (MaxValueLength < LZWTable[Subchain])
                             {
-                                max = LZWTable[Subchain];
+                                MaxValueLength = LZWTable[Subchain];
                             }
                         }
                         i++;
-                        Subchain += Characters.ElementAt<byte>(i).ToString();
+                        Subchain += Characters.ElementAt(i).ToString();
                     }
                     LZWTable.Add(Subchain, code);
                     code++;
                 }
                 else
                 {
-                    codes.Add(LZWTable[Subchain]);
+                    NumbersToWrite.Add(LZWTable[Subchain]);
                 }
                 Characters.RemoveAt(0);
             }
 
-            max = Convert.ToString(max, 2).Length;
+            MaxValueLength = Convert.ToString(MaxValueLength, 2).Length;
+        }
+       
+        public string CompressText(string text)
+        {
+            var buffer = ByteConverter.ConvertToBytes(text);//falta repetir esto varias veces por si es un texto muy grande
+            FillDictionary(buffer);
+            Compression(buffer);
             string subcode = "";
-            foreach (var number in codes)
+            List<byte> returningList = new List<byte>
             {
-                subcode = Convert.ToString(number, 2);
-                while (subcode.Length % max !=0)
+                Convert.ToByte(MaxValueLength),
+                Convert.ToByte(Differentchar.Count())
+            };
+            foreach (var item in Differentchar)
+            {
+                returningList.Add(item);
+            }
+            foreach (var number in NumbersToWrite)
+            {
+                subcode += Convert.ToString(number, 2);
+                while (subcode.Length % MaxValueLength != 0)
                 {
                     subcode = "0" + subcode;
                 }
-                Code += subcode;
+                if (subcode.Length >= 8)
+                {
+                    returningList.Add(Convert.ToByte(subcode.Substring(0, 8), 2));
+                    subcode = subcode.Remove(0, 8);
+                }
             }
-            while (Code.Length % 8 != 0)
+            if (subcode.Length != 0)
             {
-              Code += "0";
+                returningList.Add(Convert.ToByte(subcode, 2));
+            }
+            ResetVariables();
+            return ByteConverter.ConvertToString(returningList.ToArray());
+        }
+
+        public async Task CompressFile(string path, IFormFile file, string name)
+        {
+            if (System.IO.File.Exists($"{path}/Uploads/{file.FileName}"))
+            {
+                System.IO.File.Delete($"{path}/Uploads/{file.FileName}");
             }
 
+            if (System.IO.File.Exists(($"{path}/Compressions/{name}.lzw")))
+            {
+                System.IO.File.Delete(($"{path}/Compressions/{name}.lzw"));
+            }
 
-            //Construcción del arreglo final
-            var Finalcode = new List<byte>();
-            Finalcode.Add(Convert.ToByte(max));
-            Finalcode.Add(Convert.ToByte(Differentchar.Count()));
+            using var saver = new FileStream($"{path}/Uploads/{file.FileName}", FileMode.OpenOrCreate);
+            await file.CopyToAsync(saver);
+
+            using var reader = new BinaryReader(saver);
+            int bufferSize = 2000;
+            var buffer = new byte[bufferSize];
+            while (saver.Position != saver.Length)
+            {
+                buffer = reader.ReadBytes(bufferSize);
+                FillDictionary(buffer);
+            }
+
+            saver.Position = saver.Seek(0, SeekOrigin.Begin);
+            while (saver.Position != saver.Length)
+            {
+                buffer = reader.ReadBytes(bufferSize);
+                Compression(buffer);
+            }
+            reader.Close();
+            saver.Close();
+
+            using var fileToWrite = new FileStream($"{path}/Compressions/{name}.lzw", FileMode.OpenOrCreate);
+            using var writer = new BinaryWriter(fileToWrite);
+            string compressionCode = "";
+            writer.Write(Convert.ToByte(MaxValueLength));
+            writer.Write(Convert.ToByte(Differentchar.Count()));
             foreach (var item in Differentchar)
             {
-                Finalcode.Add(item);
+                writer.Write(item);
             }
-            var stringBytes = (from Match m in Regex.Matches(Code, @"\d{8}") select m.Value).ToList();
-            foreach (var byteData in stringBytes)
+            foreach (var number in NumbersToWrite)
             {
-                Finalcode.Add(Convert.ToByte(byteData, 2));
+                compressionCode += Convert.ToString(number, 2);
+                while (compressionCode.Length != MaxValueLength)
+                {
+                    compressionCode = "0" + compressionCode;
+                }
+                if (compressionCode.Length >= 8)
+                {
+                    writer.Write(Convert.ToByte(compressionCode.Substring(0, 8), 2));
+                    compressionCode = compressionCode.Remove(0, 8);
+                }
             }
-            return Finalcode.ToArray();
+            if (compressionCode.Length != 0)
+            {
+                writer.Write(Convert.ToByte(compressionCode, 2));
+                compressionCode = string.Empty;
+            }
+            writer.Close();
+            fileToWrite.Close();
+            ResetVariables();
         }
-       
-        public byte[] Decompression(byte[] CompressedText)
+        #endregion
+
+        #region Decompression
+
+        private byte[] FillDecompressionDictionary(byte[] text)
         {
-            Dictionary<int, string> LZWTableDC = new Dictionary<int, string>();
-            List<byte> Differentchar = new List<byte>();
-            List<byte> Characters = new List<byte>();
-            code = 1;
-            for (int i = 0; i < CompressedText[1]; i++)
+            for (int i = 0; i < text[1]; i++)
             {
-                if (!LZWTableDC.ContainsValue(CompressedText[i + 2].ToString()))
-                {
-                    LZWTableDC.Add(code, CompressedText[i + 2].ToString());
-                    code++;
-                    Differentchar.Add(CompressedText[i + 2]);
-                }
+                DecompressLZWTable.Add(code, text[i + 2]);
             }
-            Characters = CompressedText.ToList<byte>();
-            for (int i = 0; i < 2 + CompressedText[1]; i++)
-            {
-                Characters.RemoveAt(0);
-            }
-            string Text = "";
-            string subtext = "";
-            foreach (var code in Characters)
-            {
-                subtext = Convert.ToString(code, 2);
-                while (subtext.Length % 8 != 0)
-                {
-                    subtext = "0" + subtext;
-                }
-                Text += subtext;
-            }
-            
-            Characters.Clear();
-            if (Text.Length % 3 != 0)
-            {
-                Text = Text.Substring(0, Text.Length - (Text.Length % 3));
-            }
-            while (Text.Length > 0)
-            {
-                Characters.Add(Convert.ToByte(Text.Substring(0,CompressedText[0]),2));
-                Text = Text.Remove(0, CompressedText[0]);
-            }
-            var Finalcode = new List<byte>();
-            while (Characters.Count > 0)
-            {
-                Finalcode.Add(Convert.ToByte(LZWTableDC[Characters[0]]));
-                if(Characters.Count > 1)
-                {
-                    LZWTableDC.Add(code, Convert.ToString(LZWTableDC[Characters[0]] + LZWTableDC[Characters[1]]));
-                    code++;
-                }
-                Characters.RemoveAt(0);
-            }
-            return Finalcode.ToArray(); 
         }
 
-        public string CompressString(string text)
+        private void Decompression(byte[] compressedText)
         {
-            int bufferSize = 2000000;
-            var buffer = new byte[bufferSize];
-            buffer = ByteConverter.ConvertToBytes(text);
-            buffer = Compression(buffer);
-            return ByteConverter.ConvertToString(buffer);
+            
         }
-        
-        public string DecompressString(string text)
+
+        public string DecompressText(string text)
         {
-            int bufferSize = 2000000;
-            var buffer = new byte[bufferSize];
-            buffer = ByteConverter.ConvertToBytes(text);
-            buffer = Decompression(buffer);
-            return ByteConverter.ConvertToString(buffer);
+            var buffer = ByteConverter.ConvertToBytes(text);
+            MaxValueLength = buffer[0];
+            buffer = FillDecompressionDictionary(buffer);
+            ByteConverter.ConvertToString(buffer);
         }
+
+        public async Task DecompressFile(IFormFile file, string name)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
     }
 }
