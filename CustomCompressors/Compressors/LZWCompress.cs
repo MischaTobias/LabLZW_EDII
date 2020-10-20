@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using Microsoft.AspNetCore.Http.Features;
 using System.Threading;
+using System.Security.Cryptography;
 
 namespace CustomCompressors.Compressors
 {
@@ -19,10 +20,11 @@ namespace CustomCompressors.Compressors
     {
         #region Variables
         Dictionary<string, int> LZWTable = new Dictionary<string, int>();
-        Dictionary<int, byte> DecompressLZWTable = new Dictionary<int, byte>();
+        Dictionary<int, List<byte>> DecompressLZWTable = new Dictionary<int, List<byte>>();
         List<byte> Differentchar = new List<byte>();
         List<byte> Characters = new List<byte>();
         List<int> NumbersToWrite = new List<int>();
+        List<List<byte>> DecompressValues = new List<List<byte>>();
         int MaxValueLength = 0;
         int code = 1;
         #endregion
@@ -201,30 +203,72 @@ namespace CustomCompressors.Compressors
 
         #region Decompression
 
-        //private byte[] FillDecompressionDictionary(byte[] text)
-        //{
-        //    for (int i = 0; i < text[1]; i++)
-        //    {
-        //        DecompressLZWTable.Add(code, text[i + 2]);
-        //    }
-        //}
-
-        private void Decompression(byte[] compressedText)
+        private byte[] FillDecompressionDictionary(byte[] text)
         {
-            
+            for (int i = 0; i < text[1]; i++)
+            {
+                DecompressLZWTable.Add(code, new List<byte>(text[i + 2]));
+                code++;
+            }
+            var CompressedText = new byte[text.Length - (2 + text[1])];
+            for (int i = 0; i < CompressedText.Length; i++)
+            {
+                CompressedText[i] = text[2 + text[1] + i];
+            }
+            return CompressedText;
         }
 
-        //public string DecompressText(string text)
-        //{
-        //    var buffer = ByteConverter.ConvertToBytes(text);
-        //    MaxValueLength = buffer[0];
-        //    buffer = FillDecompressionDictionary(buffer);
-        //    ByteConverter.ConvertToString(buffer);
-        //}
+        private List<int> Decompression(byte[] compressedText)
+        {
+            List<int> Codes = new List<int>();
+            string binaryNum = string.Empty;
+            foreach (var item in compressedText)
+            {
+                binaryNum += Convert.ToString(item, 2);
+                if (binaryNum.Length >= MaxValueLength)
+                {
+                    var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                    binaryNum = binaryNum.Remove(0, MaxValueLength);
+                    Codes.Add(index);
+                    DecompressValues[0] = DecompressValues[1];
+                    DecompressValues[1] = DecompressLZWTable[index];
+                    DecompressValues[2].Clear();
+                    foreach (var value in DecompressValues[0])
+                    {
+                        DecompressValues[2].Add(value);
+                    }
+                    DecompressValues[2].Add(DecompressValues[1][0]);
+                    if (!DecompressLZWTable.ContainsValue(DecompressValues[2]))
+                    {
+                        DecompressLZWTable.Add(code, DecompressValues[2]);
+                        code++;
+                    }
+                }
+            }
+            return Codes;
+        }
+
+        public string DecompressText(string text)
+        {
+            var buffer = ByteConverter.ConvertToBytes(text);
+            MaxValueLength = buffer[0];
+            buffer = FillDecompressionDictionary(buffer);
+            var DecompressedIndexes = Decompression(buffer);
+            var DecompressedText = string.Empty;
+            var BytesToWrite = new List<byte>();
+            foreach (var index in DecompressedIndexes)
+            {
+                foreach (var value in DecompressLZWTable[index])
+                {
+                    BytesToWrite.Add(value);
+                }
+            }
+            return ByteConverter.ConvertToString(BytesToWrite.ToArray());
+        }
 
         public async Task DecompressFile(IFormFile file, string name)
         {
-            throw new NotImplementedException();
+
         }
         #endregion
     }
