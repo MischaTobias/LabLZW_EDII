@@ -22,7 +22,7 @@ namespace StringCompressor
                 {
                     Console.Clear();
                     Console.WriteLine("El resultado de la descompresión es el siguiente:");
-                    lZW.DecompressText(CompressedText); 
+                    //lZW.DecompressText(CompressedText); 
                     Console.ReadLine();
                 }
                 Console.WriteLine("Feliz día!");

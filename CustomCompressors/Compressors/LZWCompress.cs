@@ -15,7 +15,7 @@ using System.Threading;
 
 namespace CustomCompressors.Compressors
 {
-    public class LZWCompress : ICompressor
+    public class LZWCompress /*: ICompressor*/
     {
         #region Variables
         Dictionary<string, int> LZWTable = new Dictionary<string, int>();
@@ -44,10 +44,9 @@ namespace CustomCompressors.Compressors
             string chara = string.Empty;
             foreach (var character in Text)
             {
-                chara += Convert.ToChar(character);
-                if (!LZWTable.ContainsKey(chara))
+                if (!LZWTable.ContainsKey(character.ToString()))
                 {
-                    LZWTable.Add(chara, code);
+                    LZWTable.Add(character.ToString(), code);
                     code++;
                     Differentchar.Add(character);
                 }
@@ -55,6 +54,7 @@ namespace CustomCompressors.Compressors
             }
         }
 
+        //Funciona!
         private void Compression(byte[] Text)
         { 
             //Segundo recorrido y asignación de valores
@@ -108,22 +108,24 @@ namespace CustomCompressors.Compressors
             {
                 returningList.Add(item);
             }
+            string Ccode = "";
             foreach (var number in NumbersToWrite)
             {
-                subcode += Convert.ToString(number, 2);
-                while (subcode.Length % MaxValueLength != 0)
+                subcode = Convert.ToString(number, 2);
+                while (subcode.Length != MaxValueLength)
                 {
                     subcode = "0" + subcode;
                 }
-                if (subcode.Length >= 8)
+                Ccode += subcode;
+                if (Ccode.Length >= 8)
                 {
-                    returningList.Add(Convert.ToByte(subcode.Substring(0, 8), 2));
-                    subcode = subcode.Remove(0, 8);
+                    returningList.Add(Convert.ToByte(Ccode.Substring(0, 8), 2));
+                    Ccode = Ccode.Remove(0, 8);
                 }
             }
-            if (subcode.Length != 0)
+            if (Ccode.Length != 0)
             {
-                returningList.Add(Convert.ToByte(subcode, 2));
+                returningList.Add(Convert.ToByte(Ccode, 2));
             }
             ResetVariables();
             return ByteConverter.ConvertToString(returningList.ToArray());
@@ -171,23 +173,25 @@ namespace CustomCompressors.Compressors
             {
                 writer.Write(item);
             }
+            string Ccode = "";
             foreach (var number in NumbersToWrite)
             {
-                compressionCode += Convert.ToString(number, 2);
+                compressionCode = Convert.ToString(number, 2);
                 while (compressionCode.Length != MaxValueLength)
                 {
                     compressionCode = "0" + compressionCode;
                 }
-                if (compressionCode.Length >= 8)
+                Ccode += compressionCode;
+                if (Ccode.Length >= 8)
                 {
-                    writer.Write(Convert.ToByte(compressionCode.Substring(0, 8), 2));
-                    compressionCode = compressionCode.Remove(0, 8);
+                    writer.Write(Convert.ToByte(Ccode.Substring(0, 8), 2));
+                    Ccode = Ccode.Remove(0, 8);
                 }
             }
-            if (compressionCode.Length != 0)
+            if (Ccode.Length != 0)
             {
-                writer.Write(Convert.ToByte(compressionCode, 2));
-                compressionCode = string.Empty;
+                writer.Write(Convert.ToByte(Ccode, 2));
+                Ccode = string.Empty;
             }
             writer.Close();
             fileToWrite.Close();
@@ -197,26 +201,26 @@ namespace CustomCompressors.Compressors
 
         #region Decompression
 
-        private byte[] FillDecompressionDictionary(byte[] text)
-        {
-            for (int i = 0; i < text[1]; i++)
-            {
-                DecompressLZWTable.Add(code, text[i + 2]);
-            }
-        }
+        //private byte[] FillDecompressionDictionary(byte[] text)
+        //{
+        //    for (int i = 0; i < text[1]; i++)
+        //    {
+        //        DecompressLZWTable.Add(code, text[i + 2]);
+        //    }
+        //}
 
         private void Decompression(byte[] compressedText)
         {
             
         }
 
-        public string DecompressText(string text)
-        {
-            var buffer = ByteConverter.ConvertToBytes(text);
-            MaxValueLength = buffer[0];
-            buffer = FillDecompressionDictionary(buffer);
-            ByteConverter.ConvertToString(buffer);
-        }
+        //public string DecompressText(string text)
+        //{
+        //    var buffer = ByteConverter.ConvertToBytes(text);
+        //    MaxValueLength = buffer[0];
+        //    buffer = FillDecompressionDictionary(buffer);
+        //    ByteConverter.ConvertToString(buffer);
+        //}
 
         public async Task DecompressFile(IFormFile file, string name)
         {
