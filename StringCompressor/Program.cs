@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CustomCompressors.Compressors;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace StringCompressor
 {
@@ -22,7 +23,7 @@ namespace StringCompressor
                 {
                     Console.Clear();
                     Console.WriteLine("El resultado de la descompresión es el siguiente:");
-                    //lZW.DecompressText(CompressedText); 
+                    Console.WriteLine(lZW.DecompressText(CompressedText));
                     Console.ReadLine();
                 }
                 Console.WriteLine("Feliz día!");
