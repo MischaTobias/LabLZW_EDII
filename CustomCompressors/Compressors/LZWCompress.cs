@@ -17,7 +17,7 @@ using System.Net;
 
 namespace CustomCompressors.Compressors
 {
-    public class LZWCompress /*: ICompressor*/
+    public class LZWCompress : ICompressor
     {
         #region Variables
         Dictionary<string, int> LZWTable = new Dictionary<string, int>();
@@ -45,7 +45,6 @@ namespace CustomCompressors.Compressors
         private void FillDictionary(byte[] Text)
         {
             //First reading through the text
-            string chara = string.Empty;
             foreach (var character in Text)
             {
                 if (!LZWTable.ContainsKey(character.ToString()))
@@ -54,11 +53,9 @@ namespace CustomCompressors.Compressors
                     code++;
                     Differentchar.Add(character);
                 }
-                chara = string.Empty;
             }
         }
 
-        //Funciona!
         private void Compression(byte[] Text)
         { 
             //Segundo recorrido y asignación de valores
@@ -68,12 +65,13 @@ namespace CustomCompressors.Compressors
             while (Characters.Count != 0)
             {
                 int i = 0;
-                Subchain = Characters.ElementAt(i).ToString();
-                if(Characters.Count > 1)
+                Subchain = Characters[i].ToString();
+                i++;
+                while (LZWTable.ContainsKey(Subchain))
                 {
-                    while (LZWTable.ContainsKey(Subchain))
+                    if (Characters.Count - 1 > i)
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters.ElementAt(i).ToString()))
+                        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
                         {
                             NumbersToWrite.Add(LZWTable[Subchain]);
                             if (MaxValueLength < LZWTable[Subchain])
@@ -82,16 +80,53 @@ namespace CustomCompressors.Compressors
                             }
                         }
                         i++;
-                        Subchain += Characters.ElementAt(i).ToString();
+                        Subchain += Characters[i].ToString();
                     }
-                    LZWTable.Add(Subchain, code);
-                    code++;
+                    else
+                    {
+                        NumbersToWrite.Add(LZWTable[Subchain]);
+                        if (MaxValueLength < LZWTable[Subchain])
+                        {
+                            MaxValueLength = LZWTable[Subchain];
+                        }
+                        Characters = new List<byte>();
+                        break;
+                    }
+                }
+                if (Characters.Count - 1 > i)
+                {
+                    for (int j = 0; j < i - 1; j++)
+                    {
+                        Characters.RemoveAt(0);
+                    }
                 }
                 else
                 {
-                    NumbersToWrite.Add(LZWTable[Subchain]);
+                    Characters = new List<byte>();
                 }
-                Characters.RemoveAt(0);
+                //if(Characters.Count > 1)
+                //{
+                //    while (LZWTable.ContainsKey(Subchain))
+                //    {
+                //        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
+                //        {
+                //            NumbersToWrite.Add(LZWTable[Subchain]);
+                //            if (MaxValueLength < LZWTable[Subchain])
+                //            {
+                //                MaxValueLength = LZWTable[Subchain];
+                //            }
+                //        }
+                //        i++;
+                //        Subchain += Characters[i].ToString();
+                //    }
+                //    LZWTable.Add(Subchain, code);
+                //    code++;
+                //}
+                //else
+                //{
+                //    NumbersToWrite.Add(LZWTable[Subchain]);
+                //}
+                //Characters.RemoveAt(0);
             }
 
             MaxValueLength = Convert.ToString(MaxValueLength, 2).Length;
@@ -102,7 +137,6 @@ namespace CustomCompressors.Compressors
             var buffer = ByteConverter.ConvertToBytes(text);//falta repetir esto varias veces por si es un texto muy grande
             FillDictionary(buffer);
             Compression(buffer);
-            string subcode = "";
             List<byte> returningList = new List<byte>
             {
                 Convert.ToByte(MaxValueLength),
@@ -112,13 +146,13 @@ namespace CustomCompressors.Compressors
             {
                 returningList.Add(item);
             }
-            string code = "";
+            string code = string.Empty;
             foreach (var number in NumbersToWrite)
             {
-                subcode = Convert.ToString(number, 2);
+                string subcode = Convert.ToString(number, 2);
                 while (subcode.Length != MaxValueLength)
                 {
-                  subcode = "0" + subcode;
+                    subcode = "0" + subcode;
                 }
                 code += subcode;
                 if (code.Length >= 8)
@@ -172,6 +206,10 @@ namespace CustomCompressors.Compressors
             reader.Close();
             saver.Close();
 
+            if (!Directory.Exists($"{path}/Compressions"))
+            {
+                Directory.CreateDirectory($"{path}/Compressions");
+            }
             using var fileToWrite = new FileStream($"{path}/Compressions/{name}.lzw", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
             string compressionCode = "";
@@ -349,7 +387,11 @@ namespace CustomCompressors.Compressors
             reader.Close();
             saver.Close();
 
-            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
+            if (!Directory.Exists($"{path}/Decompressions"))
+            {
+                Directory.CreateDirectory($"{path}/Decompressions");
+            }
+            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}.txt", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
             foreach (var index in DecompressedIndexes)
             {

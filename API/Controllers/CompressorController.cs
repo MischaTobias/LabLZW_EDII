@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Helpers;
@@ -41,8 +42,32 @@ namespace API.Controllers
         // POST api/<CompressorController>
         [Route("/api/compress/{name}")]
         [HttpPost]
-        public void PostCompress([FromBody] string value)
+        public async Task<IActionResult> PostCompressAsync([FromForm] IFormFile file, string name)
         {
+            // try
+            // {
+                int i = 1;
+                var originalname = name;
+                if (!Directory.Exists($"{Environment.ContentRootPath}/Uploads/"))
+                {
+                    Directory.CreateDirectory($"{Environment.ContentRootPath}/Uploads/");
+                }
+                while (System.IO.File.Exists($"{Environment.ContentRootPath}/Uploads/{name}"))
+                {
+                    name = originalname + "(" + i.ToString() + ")";
+                    i++;
+                }
+                await Storage.Instance.lzwCompre.CompressFile(Environment.ContentRootPath, file, name);
+                var LZWInfo = new LZW();
+                LZWInfo.SetAttributes(Environment.ContentRootPath, file.FileName, name);
+                Storage.Instance.HistoryList.Add(LZWInfo);
+
+                return PhysicalFile($"{Environment.ContentRootPath}/Compressions/{name}.lzw", MediaTypeNames.Text.Plain, $"{name}.lzw");
+            // }
+            // catch
+            // {
+            //     return StatusCode(500);
+            // }
         }
 
         // POST api/<CompressorController>
