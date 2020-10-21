@@ -89,21 +89,21 @@ namespace CustomCompressors.Compressors
                         {
                             MaxValueLength = LZWTable[Subchain];
                         }
-                        Characters = new List<byte>();
+                        Characters.RemoveAt(0);
                         break;
                     }
                 }
-                if (Characters.Count - 1 > i)
-                {
+                //if (Characters.Count - 1 > i)
+                //{
                     for (int j = 0; j < i - 1; j++)
                     {
                         Characters.RemoveAt(0);
                     }
-                }
-                else
-                {
-                    Characters = new List<byte>();
-                }
+                //}
+                //else
+                //{
+                //    Characters = new List<byte>();
+                //}
                 //if(Characters.Count > 1)
                 //{
                 //    while (LZWTable.ContainsKey(Subchain))
