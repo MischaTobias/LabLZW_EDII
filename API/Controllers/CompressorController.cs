@@ -75,7 +75,7 @@ namespace API.Controllers
         // POST api/<CompressorController>
         [Route("/api/decompress")]
         [HttpPost]
-        public async Task<PhysicalFileResult> PostDecompressAsync([FromForm] IFormFile file)
+        public async Task<IActionResult> PostDecompressAsync([FromForm] IFormFile file)
         {
 
             LZW.LoadHistList(Environment.ContentRootPath);
@@ -88,7 +88,7 @@ namespace API.Controllers
                 }
             }
             await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
-            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, ".txt");
+            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, $"{name}.txt");
 
         }
 

@@ -372,7 +372,7 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 2000;
+            int bufferSize = 200000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
