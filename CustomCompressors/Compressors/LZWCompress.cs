@@ -37,6 +37,7 @@ namespace CustomCompressors.Compressors
             Differentchar.Clear();
             Characters.Clear();
             NumbersToWrite.Clear();
+            DecompressValues.Clear();
             MaxValueLength = 0;
             code = 1;
         }
@@ -278,6 +279,10 @@ namespace CustomCompressors.Compressors
                     if (binaryNum.Length >= MaxValueLength)
                     {
                         var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                        if (DecompressLZWTable.Values.Count > 108)
+                        {
+                            bool flag = true;
+                        }
                         binaryNum = binaryNum.Remove(0, MaxValueLength);
                         if (index != 0)
                         {
@@ -299,6 +304,7 @@ namespace CustomCompressors.Compressors
                     }
                 }
             }
+            DecompressValues.Clear();
             return Codes;
         }
 
