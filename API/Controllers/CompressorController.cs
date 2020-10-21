@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using API.Helpers;
 using API.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -73,8 +75,20 @@ namespace API.Controllers
         // POST api/<CompressorController>
         [Route("/api/decompress")]
         [HttpPost]
-        public void PostDecompress([FromBody] string value)
+        public async Task<PhysicalFileResult> PostDecompressAsync([FromForm] IFormFile file)
         {
+
+            LZW.LoadHistList(Environment.ContentRootPath);
+            var name = "";
+            foreach (var item in Storage.Instance.HistoryList)
+            {
+                if (item.CompressedName == file.FileName)
+                {
+                    name = item.OriginalName;
+                }
+            }
+            await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
+            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, ".txt");
 
         }
 

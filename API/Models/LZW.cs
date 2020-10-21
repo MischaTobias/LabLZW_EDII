@@ -21,10 +21,10 @@ namespace API.Models
 
         public void SetAttributes(string path, string prevName, string newName)
         {
-            var CountBytesO = System.IO.File.ReadAllBytes($"{path}/{prevName}");
+            var CountBytesO = System.IO.File.ReadAllBytes($"{path}/uploads/{prevName}");
             var FileP = $"{path}/{newName}";
             double BNO = CountBytesO.Count();
-            var CountBytesC = System.IO.File.ReadAllBytes($"{path}/{newName}");
+            var CountBytesC = System.IO.File.ReadAllBytes($"{path}/Compressions/{newName}.lzw");
             double BNC = CountBytesC.Count();
 
             OriginalName = prevName;
