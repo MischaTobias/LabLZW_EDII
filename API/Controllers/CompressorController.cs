@@ -77,7 +77,6 @@ namespace API.Controllers
         [HttpPost]
         public async Task<PhysicalFileResult> PostDecompressAsync([FromForm] IFormFile file)
         {
-
             LZW.LoadHistList(Environment.ContentRootPath);
             var name = "";
             foreach (var item in Storage.Instance.HistoryList)
@@ -89,7 +88,6 @@ namespace API.Controllers
             }
             await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
             return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, ".txt");
-
         }
 
     }
