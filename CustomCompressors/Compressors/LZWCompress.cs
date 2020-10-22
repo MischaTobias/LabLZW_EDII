@@ -71,34 +71,44 @@ namespace CustomCompressors.Compressors
                 i++;
                 while (LZWTable.ContainsKey(Subchain))
                 {
-                    if (Characters.Count - 1 > i)
+                    if (Characters.Count ==1)
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
-                        {
-                            NumbersToWrite.Add(LZWTable[Subchain]);
-                            if (MaxValueLength < LZWTable[Subchain])
-                            {
-                                MaxValueLength = LZWTable[Subchain];
-                            }
-                        }
-                        Subchain += Characters[i].ToString();
-                        i++;
+                        NumbersToWrite.Add(LZWTable[Subchain]);
+                        Characters = new List<byte>();
+                        break;
                     }
                     else
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
+                        if (Characters.Count - 1 > i - 1)
                         {
-                            NumbersToWrite.Add(LZWTable[Subchain]);
-                            if (MaxValueLength < LZWTable[Subchain])
+                            if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
                             {
-                                MaxValueLength = LZWTable[Subchain];
+                                NumbersToWrite.Add(LZWTable[Subchain]);
+                                if (MaxValueLength < LZWTable[Subchain])
+                                {
+                                    MaxValueLength = LZWTable[Subchain];
+                                }
                             }
+                            Subchain += Characters[i].ToString();
+                            i++;
+
                         }
                         else
                         {
-                            NumbersToWrite.Add(LZWTable[Subchain + Characters[i].ToString()]);
+                            if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
+                            {
+                                NumbersToWrite.Add(LZWTable[Subchain]);
+                                if (MaxValueLength < LZWTable[Subchain])
+                                {
+                                    MaxValueLength = LZWTable[Subchain];
+                                }
+                            }
+                            else
+                            {
+                                NumbersToWrite.Add(LZWTable[Subchain + Characters[i].ToString()]);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
 
@@ -108,16 +118,12 @@ namespace CustomCompressors.Compressors
                     code++;
                 }
 
-                if (Characters.Count - 1 > i)
+                if (Characters.Count - 1 >= i-1)
                 {
-                    for (int j = 0; j < i - 1; j++)
+                    for (int j = 0; j < i-1; j++)
                     {
                         Characters.RemoveAt(0);
                     }
-                }
-                else
-                {
-                    Characters = new List<byte>();
                 }
             }
             MaxValueLength = Convert.ToString(MaxValueLength, 2).Length;
@@ -248,8 +254,8 @@ namespace CustomCompressors.Compressors
         {
             for (int i = 0; i < text[1]; i++)
             {
-                DecompressLZWTable.Add(code, new List<byte> { text[i + 2] });
-                code++;
+                    DecompressLZWTable.Add(code, new List<byte> { text[i + 2] });
+                    code++;
             }
             var CompressedText = new byte[text.Length - (2 + text[1])];
             for (int i = 0; i < CompressedText.Length; i++)
