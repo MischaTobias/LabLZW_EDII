@@ -77,7 +77,6 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> PostDecompressAsync([FromForm] IFormFile file)
         {
-
             LZW.LoadHistList(Environment.ContentRootPath);
             var name = "";
             foreach (var item in Storage.Instance.HistoryList)

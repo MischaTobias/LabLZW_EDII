@@ -33,9 +33,11 @@ namespace CustomCompressors.Compressors
         private void ResetVariables()
         {
             LZWTable.Clear();
+            DecompressLZWTable.Clear();
             Differentchar.Clear();
             Characters.Clear();
             NumbersToWrite.Clear();
+            DecompressValues.Clear();
             MaxValueLength = 0;
             code = 1;
         }
@@ -79,56 +81,45 @@ namespace CustomCompressors.Compressors
                                 MaxValueLength = LZWTable[Subchain];
                             }
                         }
-                        i++;
                         Subchain += Characters[i].ToString();
+                        i++;
                     }
                     else
                     {
-                        NumbersToWrite.Add(LZWTable[Subchain]);
-                        if (MaxValueLength < LZWTable[Subchain])
+                        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
                         {
-                            MaxValueLength = LZWTable[Subchain];
+                            NumbersToWrite.Add(LZWTable[Subchain]);
+                            if (MaxValueLength < LZWTable[Subchain])
+                            {
+                                MaxValueLength = LZWTable[Subchain];
+                            }
                         }
-                        Characters.RemoveAt(0);
+                        else
+                        {
+                            NumbersToWrite.Add(LZWTable[Subchain + Characters[i].ToString()]);
+                        }
                         break;
                     }
                 }
-                //if (Characters.Count - 1 > i)
-                //{
+
+                if (!LZWTable.ContainsKey(Subchain))
+                {
+                    LZWTable.Add(Subchain, code);
+                    code++;
+                }
+
+                if (Characters.Count - 1 > i)
+                {
                     for (int j = 0; j < i - 1; j++)
                     {
                         Characters.RemoveAt(0);
                     }
-                //}
-                //else
-                //{
-                //    Characters = new List<byte>();
-                //}
-                //if(Characters.Count > 1)
-                //{
-                //    while (LZWTable.ContainsKey(Subchain))
-                //    {
-                //        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
-                //        {
-                //            NumbersToWrite.Add(LZWTable[Subchain]);
-                //            if (MaxValueLength < LZWTable[Subchain])
-                //            {
-                //                MaxValueLength = LZWTable[Subchain];
-                //            }
-                //        }
-                //        i++;
-                //        Subchain += Characters[i].ToString();
-                //    }
-                //    LZWTable.Add(Subchain, code);
-                //    code++;
-                //}
-                //else
-                //{
-                //    NumbersToWrite.Add(LZWTable[Subchain]);
-                //}
-                //Characters.RemoveAt(0);
+                }
+                else
+                {
+                    Characters = new List<byte>();
+                }
             }
-
             MaxValueLength = Convert.ToString(MaxValueLength, 2).Length;
         }
        
@@ -184,6 +175,7 @@ namespace CustomCompressors.Compressors
             {
                 System.IO.File.Delete(($"{path}/Compressions/{name}.lzw"));
             }
+            ResetVariables();
 
             using var saver = new FileStream($"{path}/Uploads/{file.FileName}", FileMode.OpenOrCreate);
             await file.CopyToAsync(saver);
@@ -229,7 +221,7 @@ namespace CustomCompressors.Compressors
                     compressionCode = "0" + compressionCode;
                 }
                 code += compressionCode;
-                if (code.Length >= 8)
+                while (code.Length >= 8)
                 {
                     writer.Write(Convert.ToByte(code.Substring(0, 8), 2));
                     code = code.Remove(0, 8);
@@ -284,10 +276,13 @@ namespace CustomCompressors.Compressors
                 binaryNum += subinaryNum;
                 while (binaryNum.Length > MaxValueLength)
                 {
-                    
                     if (binaryNum.Length >= MaxValueLength)
                     {
                         var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                        if (DecompressLZWTable.Values.Count > 108)
+                        {
+                            bool flag = true;
+                        }
                         binaryNum = binaryNum.Remove(0, MaxValueLength);
                         if (index != 0)
                         {
@@ -302,13 +297,14 @@ namespace CustomCompressors.Compressors
                             DecompressValues[2].Add(DecompressValues[1][0]);
                             if (!CheckIfExists(DecompressValues[2]))
                             {
-                                DecompressLZWTable.Add(code, DecompressValues[2]);
+                                DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
                                 code++;
                             }
                         }
                     }
                 }
             }
+            DecompressValues.Clear();
             return Codes;
         }
 
@@ -367,7 +363,7 @@ namespace CustomCompressors.Compressors
             {
                 System.IO.File.Delete($"{path}/Decompressions/{name}");
             }
-
+            ResetVariables();
             using var saver = new FileStream($"{path}/Uploads/{file.FileName}", FileMode.OpenOrCreate);
             await file.CopyToAsync(saver);
 
