@@ -368,7 +368,7 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 200000;
+            int bufferSize = 2000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
@@ -390,7 +390,7 @@ namespace CustomCompressors.Compressors
             {
                 Directory.CreateDirectory($"{path}/Decompressions");
             }
-            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}.txt", FileMode.OpenOrCreate);
+            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
             foreach (var index in DecompressedIndexes)
             {

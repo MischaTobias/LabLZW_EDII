@@ -81,13 +81,13 @@ namespace API.Controllers
             var name = "";
             foreach (var item in Storage.Instance.HistoryList)
             {
-                if (item.CompressedName == file.FileName)
+                if ($"{item.CompressedName}.lzw" == file.FileName)
                 {
                     name = item.OriginalName;
                 }
             }
             await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
-            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}.txt", MediaTypeNames.Text.Plain, $"{name}.txt");
+            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}", MediaTypeNames.Text.Plain, name);
 
         }
 
