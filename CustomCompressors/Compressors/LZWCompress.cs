@@ -71,7 +71,7 @@ namespace CustomCompressors.Compressors
                 i++;
                 while (LZWTable.ContainsKey(Subchain))
                 {
-                    if (Characters.Count - 1 > i)
+                    if (Characters.Count > i)
                     {
                         if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
                         {
@@ -86,18 +86,12 @@ namespace CustomCompressors.Compressors
                     }
                     else
                     {
-                        if (!LZWTable.ContainsKey(Subchain + Characters[i].ToString()))
+                        if (!LZWTable.ContainsKey(Subchain))
                         {
-                            NumbersToWrite.Add(LZWTable[Subchain]);
-                            if (MaxValueLength < LZWTable[Subchain])
-                            {
-                                MaxValueLength = LZWTable[Subchain];
-                            }
+                            LZWTable.Add(Subchain, code);
+                            code++;
                         }
-                        else
-                        {
-                            NumbersToWrite.Add(LZWTable[Subchain + Characters[i].ToString()]);
-                        }
+                        NumbersToWrite.Add(LZWTable[Characters[i-1].ToString()]);
                         break;
                     }
                 }
@@ -108,16 +102,12 @@ namespace CustomCompressors.Compressors
                     code++;
                 }
 
-                if (Characters.Count - 1 > i)
+                if (Characters.Count > i - 1)
                 {
                     for (int j = 0; j < i - 1; j++)
                     {
                         Characters.RemoveAt(0);
                     }
-                }
-                else
-                {
-                    Characters = new List<byte>();
                 }
             }
             MaxValueLength = Convert.ToString(MaxValueLength, 2).Length;
@@ -390,7 +380,7 @@ namespace CustomCompressors.Compressors
             {
                 Directory.CreateDirectory($"{path}/Decompressions");
             }
-            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
+            using var fileToWrite = new FileStream($"{path}/Decompressions/{name}.txt", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
             foreach (var index in DecompressedIndexes)
             {
