@@ -267,32 +267,25 @@ namespace CustomCompressors.Compressors
                     subinaryNum = "0" + subinaryNum;
                 }
                 binaryNum += subinaryNum;
-                while (binaryNum.Length > MaxValueLength)
+                while (binaryNum.Length >= MaxValueLength)
                 {
-                    if (binaryNum.Length >= MaxValueLength)
+                    var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                    binaryNum = binaryNum.Remove(0, MaxValueLength);
+                    if (index != 0)
                     {
-                        var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
-                        if (DecompressLZWTable.Values.Count > 108)
+                        Codes.Add(index);
+                        DecompressValues[0] = DecompressValues[1];
+                        DecompressValues[1] = DecompressLZWTable[index];
+                        DecompressValues[2].Clear();
+                        foreach (var value in DecompressValues[0])
                         {
-                            bool flag = true;
+                            DecompressValues[2].Add(value);
                         }
-                        binaryNum = binaryNum.Remove(0, MaxValueLength);
-                        if (index != 0)
+                        DecompressValues[2].Add(DecompressValues[1][0]);
+                        if (!CheckIfExists(DecompressValues[2]))
                         {
-                            Codes.Add(index);
-                            DecompressValues[0] = DecompressValues[1];
-                            DecompressValues[1] = DecompressLZWTable[index];
-                            DecompressValues[2].Clear();
-                            foreach (var value in DecompressValues[0])
-                            {
-                                DecompressValues[2].Add(value);
-                            }
-                            DecompressValues[2].Add(DecompressValues[1][0]);
-                            if (!CheckIfExists(DecompressValues[2]))
-                            {
-                                DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
-                                code++;
-                            }
+                            DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
+                            code++;
                         }
                     }
                 }
