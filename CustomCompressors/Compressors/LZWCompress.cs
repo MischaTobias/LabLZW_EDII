@@ -119,6 +119,7 @@ namespace CustomCompressors.Compressors
             var buffer = ByteConverter.ConvertToBytes(text);//falta repetir esto varias veces por si es un texto muy grande
             FillDictionary(buffer);
             Compression(buffer);
+            MaxValueLength = Convert.ToString(NumbersToWrite.Max(), 2).Length;
             List<byte> returningList = new List<byte>
             {
                 Convert.ToByte(MaxValueLength),
@@ -209,7 +210,7 @@ namespace CustomCompressors.Compressors
             foreach (var number in NumbersToWrite)
             {
                 compressionCode = Convert.ToString(number, 2);
-                while (compressionCode.Length != MaxValueLength)
+                while (compressionCode.Length < MaxValueLength)
                 {
                     compressionCode = "0" + compressionCode;
                 }
@@ -270,6 +271,10 @@ namespace CustomCompressors.Compressors
                 while (binaryNum.Length >= MaxValueLength)
                 {
                     var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                    if (index == 77)
+                    {
+                        string ok = "not";
+                    }
                     binaryNum = binaryNum.Remove(0, MaxValueLength);
                     if (index != 0)
                     {
@@ -284,6 +289,10 @@ namespace CustomCompressors.Compressors
                         DecompressValues[2].Add(DecompressValues[1][0]);
                         if (!CheckIfExists(DecompressValues[2]))
                         {
+                            if (code == 127)
+                            {
+                                string c = "ok";
+                            }
                             DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
                             code++;
                         }
