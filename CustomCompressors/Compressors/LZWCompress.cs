@@ -263,14 +263,17 @@ namespace CustomCompressors.Compressors
             foreach (var item in compressedText)
             {
                 string subinaryNum = Convert.ToString(item, 2);
-                while (subinaryNum.Length < 8)
+                if (!(item == compressedText[compressedText.Length - 1]))
                 {
-                    subinaryNum = "0" + subinaryNum;
+                    while (subinaryNum.Length < 8)
+                    {
+                        subinaryNum = "0" + subinaryNum;
+                    }
                 }
                 binaryNum += subinaryNum;
                 while (binaryNum.Length >= MaxValueLength)
                 {
-                    var index = Convert.ToByte(binaryNum.Substring(0, MaxValueLength), 2);
+                    var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
                     binaryNum = binaryNum.Remove(0, MaxValueLength);
                     if (index != 0)
                     {
