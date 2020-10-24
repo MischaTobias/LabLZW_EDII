@@ -14,8 +14,7 @@ using Microsoft.AspNetCore.Http.Features;
 using System.Threading;
 using System.Security.Cryptography;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Security;
+
 
 namespace CustomCompressors.Compressors
 {
@@ -63,7 +62,7 @@ namespace CustomCompressors.Compressors
         }
 
         private void Compression(byte[] Text)
-        { 
+        {
             //Segundo recorrido y asignación de valores
             Characters = Text.ToList();
             MaxValueLength = 0;
@@ -122,7 +121,7 @@ namespace CustomCompressors.Compressors
                 code++;
             }
         }
-       
+
         public string CompressText(string text)
         {
             var buffer = ByteConverter.ConvertToBytes(text);//falta repetir esto varias veces por si es un texto muy grande
@@ -361,7 +360,7 @@ namespace CustomCompressors.Compressors
             var buffer = ByteConverter.ConvertToBytes(text);
             MaxValueLength = buffer[0];
             buffer = FillDecompressionDictionary(buffer);
-            var DecompressedIndexes = Decompression(buffer);        
+            var DecompressedIndexes = Decompression(buffer);
             var BytesToWrite = new List<byte>();
             foreach (var index in DecompressedIndexes)
             {
