@@ -65,10 +65,12 @@ namespace API.Controllers
                 Storage.Instance.HistoryList.Add(LZWInfo);
 
                 return PhysicalFile($"{Environment.ContentRootPath}/Compressions/{name}.lzw", MediaTypeNames.Text.Plain, $"{name}.lzw");
-                        catch
+            }
+            catch 
             {
                 return StatusCode(500);
             }
+
 
         }
 
@@ -80,16 +82,16 @@ namespace API.Controllers
             try
             {
                 LZW.LoadHistList(Environment.ContentRootPath);
-            var name = "";
-            foreach (var item in Storage.Instance.HistoryList)
-            {
-                if ($"{item.CompressedName}.lzw" == file.FileName)
+                var name = "";
+                foreach (var item in Storage.Instance.HistoryList)
                 {
-                    name = item.OriginalName;
+                    if ($"{item.CompressedName}.lzw" == file.FileName)
+                    {
+                        name = item.OriginalName;
+                    }
                 }
-            }
-            await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
-            return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}", MediaTypeNames.Text.Plain, name);
+                await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
+                return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}", MediaTypeNames.Text.Plain, name);
             }
             catch
             {
