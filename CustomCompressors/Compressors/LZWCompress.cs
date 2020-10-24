@@ -75,13 +75,6 @@ namespace CustomCompressors.Compressors
                 {
                     if (Characters.Count > codeLength)
                     {
-                        if (Characters[codeLength] == 86 && codeLength + 1 < Characters.Count)
-                        {
-                            if (Characters[codeLength + 1] == 97)
-                            {
-                                var flag = true;
-                            }
-                        }
                         if (!LZWTable.ContainsKey(Subchain + Characters[codeLength].ToString()))
                         {
                             NumbersToWrite.Add(LZWTable[Subchain]);
