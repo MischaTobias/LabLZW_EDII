@@ -41,6 +41,7 @@ namespace CustomCompressors.Compressors
             Characters.Clear();
             NumbersToWrite.Clear();
             DecompressValues.Clear();
+            leftoverbits = string.Empty;
             MaxValueLength = 0;
             code = 1;
         }
@@ -264,17 +265,18 @@ namespace CustomCompressors.Compressors
             foreach (var item in compressedText)
             {
                 string subinaryNum = Convert.ToString(item, 2);
-                //if (!(item == compressedText[compressedText.Length - 1]))
-                //{
                 while (subinaryNum.Length < 8)
                 {
                     subinaryNum = "0" + subinaryNum;
                 }
-                //}
                 binaryNum += subinaryNum;
                 while (binaryNum.Length >= MaxValueLength)
                 {
                     var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
+                    if (index == 58 && Codes.Count == 29)
+                    {
+                        bool flag = true;
+                    }
                     binaryNum = binaryNum.Remove(0, MaxValueLength);
                     if (index != 0)
                     {
