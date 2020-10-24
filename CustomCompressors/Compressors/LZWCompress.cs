@@ -76,6 +76,13 @@ namespace CustomCompressors.Compressors
                 {
                     if (Characters.Count > codeLength)
                     {
+                        if (Characters[codeLength] == 86 && codeLength + 1 < Characters.Count)
+                        {
+                            if (Characters[codeLength + 1] == 97)
+                            {
+                                var flag = true;
+                            }
+                        }
                         if (!LZWTable.ContainsKey(Subchain + Characters[codeLength].ToString()))
                         {
                             NumbersToWrite.Add(LZWTable[Subchain]);
@@ -175,7 +182,7 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 2000;
+            int bufferSize = 20000000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             while (saver.Position != saver.Length)
@@ -273,10 +280,6 @@ namespace CustomCompressors.Compressors
                 while (binaryNum.Length >= MaxValueLength)
                 {
                     var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
-                    if (index == 58 && Codes.Count == 29)
-                    {
-                        bool flag = true;
-                    }
                     binaryNum = binaryNum.Remove(0, MaxValueLength);
                     if (index != 0)
                     {
@@ -386,7 +389,7 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 2000;
+            int bufferSize = 20000000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
