@@ -46,8 +46,8 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> PostCompressAsync([FromForm] IFormFile file, string name)
         {
-            // try
-            // {
+            try
+            {
                 int i = 1;
                 var originalname = name;
                 if (!Directory.Exists($"{Environment.ContentRootPath}/Uploads/"))
@@ -65,11 +65,11 @@ namespace API.Controllers
                 Storage.Instance.HistoryList.Add(LZWInfo);
 
                 return PhysicalFile($"{Environment.ContentRootPath}/Compressions/{name}.lzw", MediaTypeNames.Text.Plain, $"{name}.lzw");
-            // }
-            // catch
-            // {
-            //     return StatusCode(500);
-            // }
+                        catch
+            {
+                return StatusCode(500);
+            }
+
         }
 
         // POST api/<CompressorController>
@@ -77,7 +77,9 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> PostDecompressAsync([FromForm] IFormFile file)
         {
-            LZW.LoadHistList(Environment.ContentRootPath);
+            try
+            {
+                LZW.LoadHistList(Environment.ContentRootPath);
             var name = "";
             foreach (var item in Storage.Instance.HistoryList)
             {
@@ -88,6 +90,11 @@ namespace API.Controllers
             }
             await Storage.Instance.lzwCompre.DecompressFile(Environment.ContentRootPath, file, name);
             return PhysicalFile($"{Environment.ContentRootPath}/Decompressions/{name}", MediaTypeNames.Text.Plain, name);
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
 
         }
 
