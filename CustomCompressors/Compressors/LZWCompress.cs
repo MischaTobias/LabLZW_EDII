@@ -30,6 +30,7 @@ namespace CustomCompressors.Compressors
         List<List<byte>> DecompressValues = new List<List<byte>>();
         int MaxValueLength = 0;
         int code = 1;
+        string leftoverbits = "";
 
 
         private void ResetVariables()
@@ -256,20 +257,20 @@ namespace CustomCompressors.Compressors
         private List<int> Decompression(byte[] compressedText)
         {
             List<int> Codes = new List<int>();
-            string binaryNum = string.Empty;
+            string binaryNum = leftoverbits;
             DecompressValues.Add(new List<byte>());
             DecompressValues.Add(new List<byte>());
             DecompressValues.Add(new List<byte>());
             foreach (var item in compressedText)
             {
                 string subinaryNum = Convert.ToString(item, 2);
-                if (!(item == compressedText[compressedText.Length - 1]))
+                //if (!(item == compressedText[compressedText.Length - 1]))
+                //{
+                while (subinaryNum.Length < 8)
                 {
-                    while (subinaryNum.Length < 8)
-                    {
-                        subinaryNum = "0" + subinaryNum;
-                    }
+                    subinaryNum = "0" + subinaryNum;
                 }
+                //}
                 binaryNum += subinaryNum;
                 while (binaryNum.Length >= MaxValueLength)
                 {
@@ -309,6 +310,7 @@ namespace CustomCompressors.Compressors
                 }
             }
             DecompressValues.Clear();
+            leftoverbits = binaryNum;
             return Codes;
         }
 
