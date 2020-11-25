@@ -174,8 +174,9 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 20000000;
+            int bufferSize = 2000;
             var buffer = new byte[bufferSize];
+
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             while (saver.Position != saver.Length)
             {
@@ -187,11 +188,66 @@ namespace CustomCompressors.Compressors
             while (saver.Position != saver.Length)
             {
                 buffer = reader.ReadBytes(bufferSize);
-                Compression(buffer);
+                Characters = buffer.ToList();
+                MaxValueLength = 0;
+                while (Characters.Count != 0)
+                {
+                    int codeLength = 0;
+                    string Subchain = Characters[codeLength].ToString();
+                    codeLength++;
+                    while (Subchain.Length != 0)
+                    {
+                        if (Characters.Count > codeLength)
+                        {
+                            if (!LZWTable.ContainsKey(Subchain + Characters[codeLength].ToString()))
+                            {
+                                NumbersToWrite.Add(LZWTable[Subchain]);
+                                Subchain += Characters[codeLength].ToString();
+                                AddValueToDictionary(Subchain);
+                                Subchain = string.Empty;
+                                for (int i = 0; i < codeLength; i++)
+                                {
+                                    Characters.RemoveAt(0);
+                                }
+                            }
+                            else
+                            {
+                                Subchain += Characters[codeLength].ToString();
+                                codeLength++;
+                            }
+                        }
+                        else
+                        {
+                            if (saver.Position != saver.Length)
+                            {
+                                buffer = reader.ReadBytes(bufferSize);
+                                List<byte> aux = buffer.ToList();
+                                while (Characters.Count > 0)
+                                {
+                                    aux.Insert(0, Characters[0]);
+                                    Characters.RemoveAt(0);
+                                }
+                                Characters = aux;
+                                MaxValueLength = 0;
+                            }
+                            else
+                            {
+                                NumbersToWrite.Add(LZWTable[Subchain]);
+                                AddValueToDictionary(Subchain);
+                                for (int i = 0; i < codeLength; i++)
+                                {
+                                    Characters.RemoveAt(0);
+                                }
+                                Subchain = string.Empty;
+                            }
+
+                        }
+                    }
+                }
             }
             reader.Close();
             saver.Close();
-            // Calcular el max value length aquí
+
             MaxValueLength = Convert.ToString(NumbersToWrite.Max(), 2).Length;
 
             if (!Directory.Exists($"{path}/Compressions"))
@@ -305,6 +361,7 @@ namespace CustomCompressors.Compressors
                         }
                     }
                 }
+
             }
             DecompressValues.Clear();
             leftoverbits = binaryNum;
@@ -381,17 +438,77 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 20000000;
+            int bufferSize = 2000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
             MaxValueLength = buffer[0];
             buffer = FillDecompressionDictionary(buffer);
-            var DecompressedIndexes = Decompression(buffer);
+
+            List<int> Codes = new List<int>();
+            DecompressValues.Add(new List<byte>());
+            DecompressValues.Add(new List<byte>());
+            DecompressValues.Add(new List<byte>());
+
             while (saver.Position != saver.Length)
             {
                 buffer = reader.ReadBytes(bufferSize);
-                foreach (var number in Decompression(buffer))
+                string binaryNum = leftoverbits;
+
+                foreach (var item in buffer)
+                {
+                    string subinaryNum = Convert.ToString(item, 2);
+                    while (subinaryNum.Length < 8)
+                    {
+                        subinaryNum = "0" + subinaryNum;
+                    }
+                    binaryNum += subinaryNum;
+                    while (binaryNum.Length >= MaxValueLength)
+                    {
+                        var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
+                        binaryNum = binaryNum.Remove(0, MaxValueLength);
+                        if (index != 0)
+                        {
+                            Codes.Add(index);
+                            DecompressValues[0] = DecompressValues[1];
+                            if (DecompressLZWTable.ContainsKey(index))
+                            {
+                                DecompressValues[1] = SetValuesForDecompress(DecompressLZWTable[index]);
+                                DecompressValues[2].Clear();
+                                foreach (var value in DecompressValues[0])
+                                {
+                                    DecompressValues[2].Add(value);
+                                }
+                                DecompressValues[2].Add(DecompressValues[1][0]);
+                            }
+                            else
+                            {
+                                DecompressValues[1] = DecompressValues[0];
+                                DecompressValues[2].Clear();
+                                foreach (var value in DecompressValues[0])
+                                {
+                                    DecompressValues[2].Add(value);
+                                }
+                                DecompressValues[2].Add(DecompressValues[1][0]);
+                                DecompressValues[1] = SetValuesForDecompress(DecompressValues[2]);
+                            }
+                            if (!CheckIfExists(DecompressValues[2]))
+                            {
+                                DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
+                                code++;
+                            }
+                        }
+                    }
+                }
+                DecompressValues.Clear();
+                leftoverbits = binaryNum;
+            }
+
+            var DecompressedIndexes = Codes;
+            while (saver.Position != saver.Length)
+            {
+                buffer = reader.ReadBytes(bufferSize);
+                foreach (var number in Codes)
                 {
                     DecompressedIndexes.Add(number);
                 }
