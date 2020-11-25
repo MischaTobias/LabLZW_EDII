@@ -438,77 +438,17 @@ namespace CustomCompressors.Compressors
             await file.CopyToAsync(saver);
 
             using var reader = new BinaryReader(saver);
-            int bufferSize = 2000;
+            int bufferSize = 20000000;
             var buffer = new byte[bufferSize];
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
             MaxValueLength = buffer[0];
             buffer = FillDecompressionDictionary(buffer);
-
-            List<int> Codes = new List<int>();
-            DecompressValues.Add(new List<byte>());
-            DecompressValues.Add(new List<byte>());
-            DecompressValues.Add(new List<byte>());
-
+            var DecompressedIndexes = Decompression(buffer);
             while (saver.Position != saver.Length)
             {
                 buffer = reader.ReadBytes(bufferSize);
-                string binaryNum = leftoverbits;
-
-                foreach (var item in buffer)
-                {
-                    string subinaryNum = Convert.ToString(item, 2);
-                    while (subinaryNum.Length < 8)
-                    {
-                        subinaryNum = "0" + subinaryNum;
-                    }
-                    binaryNum += subinaryNum;
-                    while (binaryNum.Length >= MaxValueLength)
-                    {
-                        var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
-                        binaryNum = binaryNum.Remove(0, MaxValueLength);
-                        if (index != 0)
-                        {
-                            Codes.Add(index);
-                            DecompressValues[0] = DecompressValues[1];
-                            if (DecompressLZWTable.ContainsKey(index))
-                            {
-                                DecompressValues[1] = SetValuesForDecompress(DecompressLZWTable[index]);
-                                DecompressValues[2].Clear();
-                                foreach (var value in DecompressValues[0])
-                                {
-                                    DecompressValues[2].Add(value);
-                                }
-                                DecompressValues[2].Add(DecompressValues[1][0]);
-                            }
-                            else
-                            {
-                                DecompressValues[1] = DecompressValues[0];
-                                DecompressValues[2].Clear();
-                                foreach (var value in DecompressValues[0])
-                                {
-                                    DecompressValues[2].Add(value);
-                                }
-                                DecompressValues[2].Add(DecompressValues[1][0]);
-                                DecompressValues[1] = SetValuesForDecompress(DecompressValues[2]);
-                            }
-                            if (!CheckIfExists(DecompressValues[2]))
-                            {
-                                DecompressLZWTable.Add(code, new List<byte>(DecompressValues[2]));
-                                code++;
-                            }
-                        }
-                    }
-                }
-                DecompressValues.Clear();
-                leftoverbits = binaryNum;
-            }
-
-            var DecompressedIndexes = Codes;
-            while (saver.Position != saver.Length)
-            {
-                buffer = reader.ReadBytes(bufferSize);
-                foreach (var number in Codes)
+                foreach (var number in Decompression(buffer))
                 {
                     DecompressedIndexes.Add(number);
                 }
