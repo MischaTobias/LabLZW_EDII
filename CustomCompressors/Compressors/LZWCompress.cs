@@ -433,7 +433,9 @@ namespace CustomCompressors.Compressors
             saver.Position = saver.Seek(0, SeekOrigin.Begin);
             buffer = reader.ReadBytes(bufferSize);
             MaxValueLength = buffer[0];
+            saver.Position = 2 + buffer[1];
             buffer = FillDecompressionDictionary(buffer);
+            bufferSize = 2000;
             List<int> Codes = new List<int>();
             string binaryNum = leftoverbits;
             DecompressValues.Add("");
@@ -441,10 +443,7 @@ namespace CustomCompressors.Compressors
             DecompressValues.Add("");
             while (saver.Position != saver.Length)
             {
-                //if(!(saver.Position == Convert.ToInt64(bufferSize)))
-                //{
-                //    buffer = reader.ReadBytes(bufferSize);
-                //}
+                    buffer = reader.ReadBytes(bufferSize);
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     string subinaryNum = Convert.ToString(buffer[i], 2);
@@ -452,7 +451,7 @@ namespace CustomCompressors.Compressors
                     {
                         subinaryNum = "0" + subinaryNum;
                     }
-                    binaryNum += subinaryNum;                    
+                    binaryNum += subinaryNum;
                     while (binaryNum.Length >= MaxValueLength)
                     {
                         var index = Convert.ToInt32(binaryNum.Substring(0, MaxValueLength), 2);
@@ -482,12 +481,10 @@ namespace CustomCompressors.Compressors
                             }
                         }
                     }
-                    if (saver.Position != saver.Length && i == buffer.Length - 1)
-                    {
-                        buffer = reader.ReadBytes(bufferSize);
-                        i = 0;
-                    }
                 }
+                   
+
+                
             }
             reader.Close();
             saver.Close();
@@ -498,12 +495,16 @@ namespace CustomCompressors.Compressors
             }
             using var fileToWrite = new FileStream($"{path}/Decompressions/{name}", FileMode.OpenOrCreate);
             using var writer = new BinaryWriter(fileToWrite);
+            string character;
             foreach (var index in Codes)
             {
-                foreach (var value in DecompressLZWTable[index])
+                character = DecompressLZWTable[index];
+                while (character.Length >= 8)
                 {
-                    writer.Write(value);
+                    writer.Write(Convert.ToByte(Convert.ToInt32(character.Substring(0,8), 2)));
+                    character = character.Remove(0, 8);
                 }
+                    
             }
             writer.Close();
             fileToWrite.Close();
